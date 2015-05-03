@@ -6,6 +6,7 @@
 \usepackage{graphicx}
 \graphicspath{{figures/}}
 \usepackage{todonotes}
+\usepackage[titletoc,title]{appendix}
 
 \newcommand{\code}[1]{\texttt{#1}}
 
@@ -261,8 +262,11 @@ implemented in classes in the codebase, the first two in a class called \code{MC
 and the latter in \code{OpponentBot}.  Additional classes are included for parsing the text 
 input from the game engine and for storing the state of gameplay.  The input parser, basic 
 outline of the bot code, and the classes for watching the bot state are all based on the 
-starter code provided by the Warlight developers, referred to as StarterBot.  To allow ourselves 
+starter code provided by the Warlight developers, referred to as StarterBot.  In an effort
 to focus on the algorithms, we chose to use a tree structure library called \emph{tree.hh}\cite{treehh}.
+As it was the primary objective for this work, we have included screenshots of our UCT
+implementation in Appendix.  %%%%
+
 
 \section{Experiments}\label{sec:experiments}
 The simplest experiment for our bot was to submit it to the challenge server and see how it 
@@ -292,5 +296,36 @@ was simply too appealing to ignore.
 
 \bibliographystyle{plain}
 \bibliography{references}
+
+\newpage
+
+\begin{appendices}
+\section{Implementation Screenshots}
+Below is a few screenshots of the UCT algorithm.
+
+
+%
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.72\columnwidth]{uct_implementation}
+  \caption{The UCT function definition that repeatedly calls the UCTHelper function as long as time permits.}
+  \label{fig:uct_imp}
+\end{figure}
+%
+
+%
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.72\columnwidth]{uct_helper_implementation}
+  \caption{The UCT helper function that implementes the pseudo code shown in Figure \ref{fig:uct_alg}.}
+  \label{fig:uct_imp}
+\end{figure}
+%
+
+
+
+\end{appendices}
+
+
 
 \end{document}
