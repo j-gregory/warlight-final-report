@@ -40,14 +40,17 @@ not yet been determined to be winnable by a computer player. To encourage contin
 research and development of game AI, some game makers occasionally run competitions
 for developing new AI bots to play their games.
 
-In this work, we have developed a bot to compete in the Warlight AI Challenge 2 \cite{warlight}.
-The goal of this competition is to build a bot that can play (and, of course, can
-win) Warlight, a RISK-style game.
+In this work, we have developed a bot to compete in the Warlight AI Challenge 2 
+\cite{warlight}. The goal of this competition is to build a bot that can play (and, of 
+course, can win) Warlight, a RISK-style game.
 
 \subsection{Warlight} \label{sec:warlight}
 For a full discussion of the rules and origins of the game \emph{Warlight}, refer
 to our previous paper, \emph{Towards the Planning of World Domination}\cite{ourproposal}.
-To recap the major points, Warlight is a game similar to the classic board game RISK, with the addition of fog-of-war and randomly-generated maps. The Warlight AI Challenge 2 is a competition that pits bots against each other in a series of two-player games and collects the scores of the games to determine a winner of the competition.
+To recap the major points, Warlight is a game similar to the classic board game RISK, with 
+the addition of fog-of-war and randomly-generated maps. The Warlight AI Challenge 2 is a 
+competition that pits bots against each other in a series of two-player games and collects 
+the scores of the games to determine a winner of the competition.
 
 \section{Related Work}\label{sec:previous}
 The largest body of related work is the set of other bots in the current challenge.  
@@ -70,17 +73,63 @@ players for RISK have been created and sold in commercial software as early as 1
 These solutions are also of varying quality - the 1992 release of \textit{WinRisk} for 
 Windows 3.1 was capable of beating at-best an inexpert child player - and most 
 implementations are closed-source without any documentation of their algorithms.
-%there is still prior work for creating an AI bot that can play RISK and similarly-structured games.
 
-The UCT algorithm has been used as the basis for other games: the algorithm was originally described for the game \emph{Go}\cite{uct}, then also applied to \emph{backgammon}\cite{uctback}.  However, unlike Warlight, in both of those games, the game itself is played on a board of finite size and both players have full knowledge of the state of the board.  In contrast, Warlight's random maps mean that we cannot know anything about the board size and layout beforehand, while Warlight's for of war means that we do not have perfect knowledge of the board. UCT has also been used for more complex games, such as Tantrix\cite{tantrix} which has a much more dynamic board than Go and backgammon.
+The UCT algorithm has been used as the basis for other games: the algorithm was originally 
+described for the game \emph{Go}\cite{uct}, then also applied to 
+\emph{backgammon}\cite{uctback}.  However, unlike Warlight, in both of those games, the game 
+itself is played on a board of finite size and both players have full knowledge of the state 
+of the board.  In contrast, Warlight's random maps mean that we cannot know anything about 
+the board size and layout beforehand, while Warlight's for of war means that we do not have 
+perfect knowledge of the board. UCT has also been used for more complex games, such as 
+Tantrix\cite{tantrix} which has a much more dynamic board than Go and backgammon.
 
 \section{Approach}\label{sec:approach}
-We have built a bot that uses \emph{Monte-Carlo Tree Search} (MCTS) and \emph{Upper COnfidence Bound for Trees} (UCT) to play Warlight.  We have also built an ``Opponent Bot'' that performs its moves greedily instead of using our algorithm.
+We have built a bot that uses \emph{Monte-Carlo Tree Search} (MCTS) and \emph{Upper 
+Confidence Bound for Trees} (UCT) to play Warlight.  We have also built an ``Opponent Bot'' 
+that performs its moves greedily instead of using our algorithm.
 
 \subsection{UCT and MCTS}
-\todo{I really messed up writing this one, so it still needs to be filled in\ldots}
+While traditional AI algorithms for playing games rely on static evaluation functions that 
+analyze the game tree to determine the next move to make based on the current state of the 
+game, Monte-Carlo Tree Search uses an entirely different approach.  Taking into account that 
+the game tree of complex games may be too big to analyze completely for every move, MCTS 
+uses a cycle of \emph{Selection, Expansion, Simulation, and Back-Propagation} to selectively 
+explore the game tree.
 
-\subsection{Opponent Bot}
+\subsubsection{Selection}
+The first step of MCTS is finding a leaf node of the game tree from which to further 
+analyze.  The choice of which leaf node will be selected must balance the two goals of 
+exploration and expansion -- whether to strike off in a new direction in the tree to see if 
+the result will be better or to press farther down the current path.
+
+Within the MCTS ``Selection'' step, we use UCT to determine the ideal leaf node for 
+selection.  We apply the UCT algorithm to determine a score for each node, then choose the 
+node with the best score.  For information about the UCT algorithm, see see \ref{sec:uct}.
+
+\subsubsection{Expansion}
+Once a leaf node has been selected, one or more additional nodes are added below it to make 
+space for the game simulations that will be played based on the game state at this node.
+
+\subsubsection{Simulation}
+Within the newly created node, a random game is simulated based on the current state.  We 
+use our OpponentBot (described in section \ref{sec:oppbot}) to simulate the opponent's moves 
+during this step.  As described below, the simulation is kept deliberately simple -- simpler 
+than our primary planning algorithm -- in order to leave the bulk of our limited execution 
+time for the MCTS/UCT operations.
+
+\subsubsection{Back-Propagation}
+After a simulation is complete, the node at which the simulation was executed and all of its 
+ancestors in the tree are updated with a record of whether that game was a win, a loss, or a 
+draw.  This information is used by UCT in the future rounds' selection steps.
+
+\subsection{UCT}\label{sec:uct}
+To balance the need for exploration of entirely new paths through the game tree with
+exploitation of known paths, the UCT algorithm maintains an \emph{Exploration Bias} that grows
+over time, as well as a \emph{Win Rate} for each node.  The UCT score for a node is based on a
+combination of the exploration bias and win rate.
+\todo{Jason: Can you expand this a bit?}
+
+\subsection{Opponent Bot}\label{sec:oppbot}
 Most existing UCT literature and applications simulate both the AI player's and opponent's
 moves, requiring complete visibility of the current state of the game; an expectation that
 is often taken for granted by UCT/MCTS algorithm designers. However, in Warlight, the only
@@ -101,19 +150,45 @@ sent from the game engine.  The update mechanism operates via internal state rec
 triggered by event handlers listening to actual game engine broadcast messages. While the
 opponent bot algorithm was intended to complement our implementation of UCT, we have found 
 that it may yet be robust enough to be a stand-alone bot agent. By estimating how a real 
-opponent might behave, it allows us to maintain the classic model of UCT, including the assumption of full knowledge of the game.
+opponent might behave, it allows us to maintain the classic model of UCT, including the 
+assumption of full knowledge of the game.
 
 \section{Implementation}\label{sec:impl}
-Our bot is implemented in C++, and the code is publicly available on Github\cite{github}.  The bot takes input on \code{STDIN} and returns commands to be executed back to the game engine on \code{STDOUT}.  All of the algorithms (MCTS, UCT, and the Greedy OpponentBot) are implemented in classes in the codebase, the first two in a class called \code{MCTSManager} and the latter in \code{OpponentBot}.  Additional classes are included for parsing the text input from the game engine and for storing the state of gameplay.  The input parser, basic outline of the bot code, and the classes for watching the bot state are all based on the starter code provided by the Warlight developers.  To allow ourselves to focus on the algorithms, we chose to use a tree structure library called \emph{tree.hh}\cite{treehh}.
+Our bot is implemented in C++, and the code is publicly available on Github\cite{github}.  
+The bot takes input on \code{STDIN} and returns commands to be executed back to the game 
+engine on \code{STDOUT}.  All of the algorithms (MCTS, UCT, and the Greedy OpponentBot) are 
+implemented in classes in the codebase, the first two in a class called \code{MCTSManager} 
+and the latter in \code{OpponentBot}.  Additional classes are included for parsing the text 
+input from the game engine and for storing the state of gameplay.  The input parser, basic 
+outline of the bot code, and the classes for watching the bot state are all based on the 
+starter code provided by the Warlight developers.  To allow ourselves to focus on the 
+algorithms, we chose to use a tree structure library called \emph{tree.hh}\cite{treehh}.
 
 \section{Experiments}\label{sec:experiments}
-The simplest experiment for our bot was to submit it to the challenge server and see how it fared against other bots.  We have tested our bot against multiple other bots participating in the challenge, and we have won against several of them.  However, some of this success is due to the fact that many of the bots that have been uploaded are likely incomplete or are even just the unmodified starter bot, and these results may be unreliable.
+The simplest experiment for our bot was to submit it to the challenge server and see how it 
+fared against other bots.  We have tested our bot against multiple other bots participating 
+in the challenge, and we have won against several of them.  However, some of this success is 
+due to the fact that many of the bots that have been uploaded are likely incomplete or are 
+even just the unmodified starter bot, and these results may be unreliable.
 
-We are building an experiment in which we pit our MCTS/UCT bot against our greedy OpponentBot to determine how much better we can do with the intelligent bot than the greedy one.  However, we do not yet have results of this match.
+We are building an experiment in which we pit our MCTS/UCT bot against our greedy 
+OpponentBot to determine how much better we can do with the intelligent bot than the greedy 
+one.  However, we do not yet have results of this match.
 
-Currently, the greedy agent performs well as a stand-alone agent (in test environment) independent of UCT; however it is currently still going through some integration issues with UCT. Originally developed to be run-time inexpensive, so that UCT implementation might make the most of pre-allocated runtime constraints imposed by game engine, the greedy algorithm was not designed with the design flexibility of modern object oriented language and was more tightly coupled by multiple container stacks and synchronizing event handler type routines. Thus complete integration of state classes employed by parent UCT algorithm is taking a little more time than the proposed time frame and remains a work in progress. However tangential the development of the DFS algorithm might have been within the scope of an UCT algorithm, the appeal of developing complementary planning algorithm as an academic exercise was simply too appealing to ignore.
+Currently, the greedy agent performs well as a stand-alone agent (in test environment) 
+independent of UCT; however it is currently still going through some integration issues with 
+UCT. Originally developed to be run-time inexpensive, so that UCT implementation might make 
+the most of pre-allocated runtime constraints imposed by game engine, the greedy algorithm 
+was not designed with the design flexibility of modern object oriented language and was more 
+tightly coupled by multiple container stacks and synchronizing event handler type routines. 
+Thus complete integration of state classes employed by parent UCT algorithm is taking a 
+little more time than the proposed time frame and remains a work in progress. However 
+tangential the development of the DFS algorithm might have been within the scope of an UCT 
+algorithm, the appeal of developing complementary planning algorithm as an academic exercise 
+was simply too appealing to ignore.
 
 \section{Conclusion}\label{sec:conclusion}
+\todo{still needs to be filled in\ldots}
 
 \bibliographystyle{plain}
 \bibliography{references}
