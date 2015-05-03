@@ -1,32 +1,27 @@
 \documentclass[a4paper,11pt]{article}
 
-\usepackage[affil-it]{authblk}
-%\usepackage{amsfonts, amsmath, amssymb, bm}
-%\usepackage{float}
 \usepackage[margin=1.0in]{geometry}
-\usepackage{graphicx}
-%\usepackage{hyperref}
-%\usepackage{subcaption}
-%\usepackage{subfigure}
+\usepackage[affil-it]{authblk}
 \usepackage{url}
-
-%\graphicspath{{../pdf/}{../jpeg/}}
-% \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+\usepackage{graphicx}
 \graphicspath{{figures/}}
+\usepackage{todonotes}
 
-%\newcommand{\bfnull}{\textbf{null}}
+\newcommand{\code}[1]{\texttt{#1}}
 
 \begin{document}
 
-\title{Towards the Planning of World Domination}
+\title{I Came, I Saw, I Conquered: \\ A Plan for World Domination}
 \author{Jason Gregory, Moshe Katz, \& Kamruzzaman Quddus \\ \{jgregory, mmkatz, kquddus\}@umd.edu}
 \affil{University of Maryland, College Park, MD}
 \date{\today}
 
 \maketitle
 
-%
-\abstract{In this work, we propose to develop a probabilistic planner that will compete in the Warlight AI Challenge 2.  More specifically, we intend on implementing and modifying the \emph{Upper Confidence Bounds on Trees} (UCT) algorithm for winning Warlight games when randomly paired up against users with other strategies.}
+\abstract{In this work, we describe a probabilistic planner that competes in
+the Warlight AI Challenge 2.  More specifically, we have implemented and modified
+the \emph{Upper Confidence Bounds on Trees} (UCT) algorithm for winning Warlight
+games when randomly paired up against users with other strategies.}
 
 \section{Introduction}\label{sec:intro}
 \subsection{AI in Games}\label{aiingames}
@@ -45,101 +40,28 @@ not yet been determined to be winnable by a computer player. To encourage contin
 research and development of game AI, some game makers occasionally run competitions
 for developing new AI bots to play their games.
 
-In this work, we will develop a bot to compete in the Warlight AI Challenge 2 \cite{warlight}.
+In this work, we have developed a bot to compete in the Warlight AI Challenge 2 \cite{warlight}.
 The goal of this competition is to build a bot that can play (and, of course, can
 win) Warlight, a RISK-style game.
 
-\subsection{Problem Statement}\label{sec:problem}
-We expect to develop an AI planner specifically for competing in the Warlight AI Challenge 2.  
-To aid those who are less familiar with RISK, we first describe the game-play mechanics,
-\footnote{While a full description of the rules of RISK would be too long to 
-include here, the basics described should be enough to understand the general 
-game-play.  The reader is directed to the printed rules document found in the game 
-box for additional details.} then the differences of Warlight.
+\subsection{Warlight} \label{sec:warlight}
+For a full discussion of the rules and origins of the game \emph{Warlight}, refer
+to our previous paper, \emph{Towards the Planning of World Domination}\cite{ourproposal}.
+To recap the major points, Warlight is a game similar to the classic board game RISK, with the addition of fog-of-war and randomly-generated maps. The Warlight AI Challenge 2 is a competition that pits bots against each other in a series of two-player games and collects the scores of the games to determine a winner of the competition.
 
-\subsubsection{RISK}
-At the start of a game, players take turns placing troops on the board to claim
-their territories.  After all territories have been claimed, players place
-additional troops on the board, with the number of additional troops depending on
-the number of game players.  All players choose the same number of territories.
-When only two players are playing, as is the case in the games our bot will play,
-one third of the territories remain neutral, which means that they will only defend
-against attacks from the two players, but they will not attack on their own.
-
-At the beginning of every turn, players receive additional armies to place on the 
-game board.  The number of armies varies based on how many territories the player 
-controls, and includes additional bonus armies if the player controls entire 
-continents or if the player plays any "RISK Cards".  Players place these armies 
-before continuing their turns.  The rest of a player's turn consists of attacking 
-neighboring territories held by opposing troops and/or transferring troops to a 
-neighboring territory held by the player's own troops in order to fortify it. 
-Note, only one fortification move may be made per turn, and it must be the last 
-move of the turn.
-
-When a player attacks another player's territory, the attacker rolls a number of 
-dice, as does the defender.  The dice are compared and the loser of each comparison 
-removes an army token from the territory.  The attacker conquers the territory if 
-the defender's last army is removed from it, in which case the attacker must move 
-some of his troops into the attacked territory.  If the attacker is successful in 
-their attack , they draw a "RISK Card" which can be traded-in as sets of three 
-to receive additional troops in a future turn.
-
-\subsubsection{Warlight} \label{sec:warlight}
-Warlight has several modifications from the RISK game-play.  The most significant 
-change is the addition of \emph{fog of war} -- that is, players can only see 
-their own territories and the territories immediately adjacent to them.  
-Additionally, while RISK is played on a world map that has been divided into arbitrary 
-territories, Warlight can be played on custom-designed or randomly-generated maps.  
-Warlight also has many additional types of cards that can be drawn, including 
-Reinforcement cards (like RISK), Blockade cards, Spy and Surveillance cards, 
-Gift cards, and several other types.
-
-A major factor in developing a strategy for playing Warlight is that a multi-player 
-(human) Warlight game may have many configurable options set by the game host - 
-this makes developing a strategy that covers all game options impossible. Because 
-RISK is usually played on a physical game board, the per-game options are limited 
-to simple "house rules" modifications; for this reason, there are many published 
-RISK strategy guides but very few guides for Warlight.  Furthermore, guides for 
-Warlight are usually much more vague about specific implementation of the strategies 
-discussed therein \cite{warlightguide}.
-
-\subsubsection{Warlight AI Challenge 2}
-For the Warlight AI Challenge 2, our bot will play a two-player game against 
-another bot.  The game will be played on a random map, using the standard scoring 
-and troop allocation rules, but not using any cards.
-
-One major game setting is called the \emph{luck factor}. The luck factor is used 
-in the calculation of how many attacking and defending armies are destroyed.  While 
-the previous Warlight AI Challenge used a luck factor of $100\%$, this challenge uses 
-only $16\%$ so there is a lot less luck and a lot more certainty about the outcome of 
-an attack.
-
-A bot wins the game by destroying all of the armies of the opposing bot.  However, 
-if the turn limit of the game is reached, the game is considered a draw.  The 
-maximum number of turns allowed in a game depends on the size of the map, and is 
-currently set as the number of map regions times 2.5.
-
-\subsection{Previous Work}\label{sec:previous}
+\section{Related Work}\label{sec:previous}
 The largest body of related work is the set of other bots in the current challenge.  
 There are currently around 200 competition entries from 30 countries written in 
-eleven languages \cite{warlight}.  While we have not yet examined any of our competitors 
+eleven languages \cite{warlight}.  While we have not examined many of our competitors 
 in detail, they are all working toward the same goal as we are of developing an AI bot for 
-this game, and many of them are much farther ahead at this time.
+this game, and some of them are very good at playing the game.
 
 Additional related work comes from the first Warlight AI Challenge.  While the 
 rules of the game for that competition were slightly different, many of the 
 techniques used there will still apply to this challenge, either as examples of 
 successful approaches, or otherwise as examples of what not to try.
 
-There are also many strategy guides that exist for RISK.  However, as discussed 
-above, there is no real complete strategy guide for Warlight.  Given that every 
-game our bot will be playing will be on a completely random map, and paired against a
-random opponent, many of the typical strategy guides might not apply to every game; 
-this is especially true for the static RISK guide.  Additionally, many common RISK 
-strategies require knowledge of more of the board status than Warlight allows us to 
-have due to fog of war.
-
-Finally, there are existing AI bots for the original RISK game.  While some have been 
+There are existing AI bots for the original RISK game.  While some have been 
 discussed only theoretically, including strategies from MIT \cite{riskmit}, Markov 
 Chains from North Carolina State University \cite{riskncs}, Monte-Carlo (UCT) 
 techniques for territory selection from University of Alberta \cite{riskalb}, and 
@@ -150,88 +72,50 @@ Windows 3.1 was capable of beating at-best an inexpert child player - and most
 implementations are closed-source without any documentation of their algorithms.
 %there is still prior work for creating an AI bot that can play RISK and similarly-structured games.
 
-\subsection{Importance and Relevancy}\label{sec:importance}
-In addition to the obvious goal of performing well in the Warlight AI Challenge 2, 
-we will use this project as a mechanism to learn and practice topics from class and 
-demonstrate our ability to apply different techniques to a real-world use-case.
-Moreover, techniques used for tactical game-play often have grounded 
-application for training exercises and simulations of realistic military situations.  This is 
-especially true for algorithms that model adversarial behavior in addition to our 
-own, providing the ability to play out WarGames-style dangerous scenarios in 
-complete safety.\footnote{In fact, the NORAD missile command center was already 
-using the RISK-style AI shown in WarGames in 1979, and there really was an incident
-in which the AI simulation was thought to be a real Soviet attack
-\cite{wargamesreal}.}
+The UCT algorithm has been used as the basis for other games: the algorithm was originally described for the game \emph{Go}\cite{uct}, then also applied to \emph{backgammon}\cite{uctback}.  However, unlike Warlight, in both of those games, the game itself is played on a board of finite size and both players have full knowledge of the state of the board.  In contrast, Warlight's random maps mean that we cannot know anything about the board size and layout beforehand, while Warlight's for of war means that we do not have perfect knowledge of the board. UCT has also been used for more complex games, such as Tantrix\cite{tantrix} which has a much more dynamic board than Go and backgammon.
 
-%
-\section{Technical Approach}\label{sec:approach}
-Our approach for designing a planner for the Warlight AI Challenge 2 is to implement the basic \emph{Upper Confidence Bounds on Trees} (UCT) algorithm~\cite{uct} and then, time permitted, improve the performance of the algorithm by making different modifications.
+\section{Approach}\label{sec:approach}
+We have built a bot that uses \emph{Monte-Carlo Tree Search} (MCTS) and \emph{Upper COnfidence Bound for Trees} (UCT) to play Warlight.  We have also built an ``Opponent Bot'' that performs its moves greedily instead of using our algorithm.
 
+\subsection{UCT and MCTS}
+\todo{I really messed up writing this one, so it still needs to be filled in\ldots}
 
-\subsection{Hypothesis}\label{sec:hypothesis}
-We believe that the Monte-Carlo-based UCT algorithm will enable the search of different applicable moves in the fast-paced, time-limited game of the Warlight AI Challenge 2. We also hypothesize that, due to the strict time constraint enforced by the game engine, we will be required to modify the UCT algorithm to expedite the search through the game tree.  By making these modifications, we feel that we can make intelligent decisions in each turn that eventually lead to winning the game.
+\subsection{Opponent Bot}
+Most existing UCT literature and applications simulate both the AI player's and opponent's
+moves, requiring complete visibility of the current state of the game; an expectation that
+is often taken for granted by UCT/MCTS algorithm designers. However, in Warlight, the only
+visibility UCT based bot has is is that of area which is adjacent to its own region(s) on 
+the board. To compensate for the added complexity of implementing UCT with imperfect 
+knowledge, a separate bot class called ``OpponentBot'' is designed to mimic the behavior of 
+the opponent and thus work around the lack of full game board visibility.
 
-\subsection{Process}\label{sec:process}
-The general strategy for the planning algorithm is to acquire regions in a manner by which power is gained quickly while always remaining tactically flexible so as to starve the opponent from in-game advantages. Such a planner must be adversarial in nature, robust enough to adapt to different counter strategies, efficient enough to plan quickly, and adhere to the constraints defined by the games rules.
+OpponentBot is designed as a greedy DFS-like algorithm with constraints (troops per turn,
+defined number of regions it owns and can operate within) and the requirement to be as
+run-time inexpensive as possible. Given its current list regions, the algorithm calculates
+the cost of obtaining super-region(s) given its present state and prioritizes its plan of
+region acquisition accordingly. The plan is adjusted each turn given the known state of the 
+game at that turn. Because the DFS algorithm is meant to be an approximation of what an
+actual opponent might have been doing both behind the `fog of war' and within visible area, 
+its internal hypothetical state must be regularly resynced with actual game state changes
+sent from the game engine.  The update mechanism operates via internal state recalculations 
+triggered by event handlers listening to actual game engine broadcast messages. While the
+opponent bot algorithm was intended to complement our implementation of UCT, we have found 
+that it may yet be robust enough to be a stand-alone bot agent. By estimating how a real 
+opponent might behave, it allows us to maintain the classic model of UCT, including the assumption of full knowledge of the game.
 
-The various constraints in the Warlight AI Challenge 2 primarily dictate how we will approach developing a planner. First, the game provides each player with a $10$ second time bank that ultimately limits one from planning extensively in each turn.  Additionally, this game increases the difficulty of the original RISK game by introducing the concept of fog of war, as described in Section~\ref{sec:warlight}. This incorporates a level of uncertainty into the game that must be met with a probabilistic planner instead of a deterministic one. As a result of these constraints imposed by the game engine, we desire an algorithm that balances planning performance with run time; otherwise, we will run out of time, never make a move, and lose the game. 
+\section{Implementation}\label{sec:impl}
+Our bot is implemented in C++, and the code is publicly available on Github\cite{github}.  The bot takes input on \code{STDIN} and returns commands to be executed back to the game engine on \code{STDOUT}.  All of the algorithms (MCTS, UCT, and the Greedy OpponentBot) are implemented in classes in the codebase, the first two in a class called \code{MCTSManager} and the latter in \code{OpponentBot}.  Additional classes are included for parsing the text input from the game engine and for storing the state of gameplay.  The input parser, basic outline of the bot code, and the classes for watching the bot state are all based on the starter code provided by the Warlight developers.  To allow ourselves to focus on the algorithms, we chose to use a tree structure library called \emph{tree.hh}\cite{treehh}.
 
-From our research, classical planning techniques that exhaustively explore the entire state space are not applicable to this problem because of the time required to find an optimal plan. Instead, we propose to use the Monte-Carlo-based UCT algorithm.  First, we plan on implementing the basic UCT algorithm so that we can generate a sensible plan each turn for a single region in our possession.  Next, we plan to extend this implementation so that we will execute a new instance of the UCT algorithm for every region that contains more than one of our troops.  In other words, regions that we own and have the ability to attack or transfer will have separate game trees. We will simulate the game for each game tree simultaneously using threads, initially disregarding any time constraint, and produce a set of the best moves, each with some probability $p_{i}$. Note, due to the nature of the UCT algorithm, we will not produce an optimal solution, but rather a solution with a certain probability of success, which we can apply some metric to determine the quality of the plan of actions. We believe we are able to evaluate each region independently because the attack and transfer commands in a game are independent. For example, it is illegal to transfer troops from region $A$ to region $B$, and then use those newly-acquired troops to attack region $C$. We plan to initially evaluate the UCT algorithm without enforcing a time constraint so that we can characterize the performance of the algorithm completely and determine an upper bound for the run time required to produce all possible commands. 
+\section{Experiments}\label{sec:experiments}
+The simplest experiment for our bot was to submit it to the challenge server and see how it fared against other bots.  We have tested our bot against multiple other bots participating in the challenge, and we have won against several of them.  However, some of this success is due to the fact that many of the bots that have been uploaded are likely incomplete or are even just the unmodified starter bot, and these results may be unreliable.
 
-Depending on the amount of time required to traverse the entire game tree in a single instance of the UCT algorithm, we may be required to implement some methods for speeding up the search. One possible method we are considering is the concept of a zone for the purposes of more efficient simulation generation.  We define a zone to be a collection of regions where each region is a neighbor to at least one region with the same owner and at least one region with an opposing owner.  From this definition we can develop a strategy for quickly identifying whether it is intelligent to attack an opponent by comparing the total number of troops in our zone versus the opponent's zone.  In the event an attack is not advised, substantial processing time will be saved by reducing the instances of the UCT algorithm.  An additional modification we are contemplating, provided there is sufficient time in the semester, is the incorporation of a minimax approach to evaluate our moves and the opponent's moves.  Also, we may try prioritizing actions based on the probability of success, prioritizing certain events that may lead to more promising future moves that are consistent with our strategy, and different thresholds for limiting the depth in which UCT explores a game tree. The specific details of these modifications will be determined during our development and testing tasks and then formally documented in our final report.
+We are building an experiment in which we pit our MCTS/UCT bot against our greedy OpponentBot to determine how much better we can do with the intelligent bot than the greedy one.  However, we do not yet have results of this match.
 
-In terms of evaluation, we will simulate several different approaches that incorporate as many modifications as time permits.  Each solution will be simulated in a large number of trials with a randomly generated map and then the performance will be assessed based on the number of games won as well as the rate at which the game was won.  In this case, the rate of winning a game is defined as the number of rounds required to win divided by the maximum number of rounds the game could have been played. The Warlight AI Challenge 2 also provides a leader board that indicates the users with the best performing algorithms. At a high-level we plan to compare the performance of our approach with the leaders in the challenge.
+Currently, the greedy agent performs well as a stand-alone agent (in test environment) independent of UCT; however it is currently still going through some integration issues with UCT. Originally developed to be run-time inexpensive, so that UCT implementation might make the most of pre-allocated runtime constraints imposed by game engine, the greedy algorithm was not designed with the design flexibility of modern object oriented language and was more tightly coupled by multiple container stacks and synchronizing event handler type routines. Thus complete integration of state classes employed by parent UCT algorithm is taking a little more time than the proposed time frame and remains a work in progress. However tangential the development of the DFS algorithm might have been within the scope of an UCT algorithm, the appeal of developing complementary planning algorithm as an academic exercise was simply too appealing to ignore.
 
-Hypothetically, the proposed approach could produce largely-varied results and is possibly dependent on the size of the map or the complexity of the opponent's algorithm. We seek to characterize the overall performance as it relates to these potential dependencies.  Our analysis and findings will be detailed in final report and presentation.
+\section{Conclusion}\label{sec:conclusion}
 
-%Essential elements such as parsing routines as sensor/actuator platform will generate commands for the engine, events, create/update sate variables and possibly some book-keeping resources such as look-up tables (to be used by probabilistic routines) will also need to be developed. State variables, tasks and events will work as the  communication scheme between each level of this hierarchical adversarial planner.
-
-
-%
-\section{Project Management}\label{sec:management}
-The main tasks for this project include implementing the UCT algorithm, conducting simulations, and evaluating the generated data so that we can publish our results in a report and a presentation. 
-
-\subsection{Tasks}\label{sec:tasks}
-There are seven main tasks required to successfully develop a planner that is capable of winning a game in the Warlight AI Challenge 2.  The first, which we have already completed, is a literature review of the UCT algorithm, its variants, and its application to the planning of games involving artificial intelligence. The next task is formulating the problem in a manner that is compatible with our proposed approach. With a concrete understanding for a possible solution, the next task is to implement the basic UCT algorithm.  The next two tasks consist of testing, modifying, and improving our implementation to enhance the performance of our solution.  Extensive simulation and evaluation of our algorithm is required to determine how well it performs compared to other strategies. Finally, we will present our results in a report and a presentation.  These tasks, with their respective tentative target dates are summarized in Table~\ref{tab:deadlines}.
-
-%
-\begin{table}[htbp]
-  \centering
-  \begin{tabular}{|c|c|}
-    \hline
-    \emph{Task} & \emph{Target Date} \\ 
-    \hline
-    Literature Review & March 9, 2015 \\ \hline
-    Problem Formulation & March 16, 2015 \\ \hline
-    UCT Implementation & April 6, 2015 \\ \hline
-    Testing & April 13, 2015 \\ \hline
-    UCT Modification and Improvement & April 13, 2015 \\ \hline
-    Simulation and Evaluation & April 27, 2015 \\ \hline
-    Write Report and Presentation & May 2, 2015 \\ \hline
-  \end{tabular}
-  \caption{Table of project tasks and target dates for completing each task.}
-  \label{tab:deadlines}
-\end{table}
-%
-
-\subsection{Assignments}\label{sec:assignments}
-All three group members will be responsible for contributing to the problem formulation. This ensures that everyone in the group fully understands both the problem at hand and the proposed solution.  Jason Gregory and Kamruzzaman Quddus will work together to implement the proposed UCT algorithm and its modifications.  Moshe Katz will incrementally test the team's implementation as the code is being written to ensure correct functionality and then collect data by executing numerous simulations. The group, as a whole, will collaboratively evaluate the result, develop a thorough analysis, and create the paper and presentation.
-
-
-%
-%\begin{figure}[!htbp]
-%  \centering
-%  \includegraphics[width=0.95\columnwidth]{gantt_chart}
-%  \caption{Tentative schedule for completing each task. Note, red boxes indicate deliverables that will be submitted to the professor.}
-%  \label{fig:schedule}
-%\end{figure}
-
-%
-\section{Conclusions}\label{sec:conclusions}
-In this proposal we present our anticipated efforts for developing a probabilistic planner whose goal is to consistently win games in the Warlight AI Challenge 2. On the surface, this toy problem may appear to have little value as it seems inapplicable to real-world problems; however, upon further analysis one immediately sees the expected contributions from our technical approach.  Although UCT has been applied to choosing RISK territories \cite{riskalb}, to our knowledge this will be the first application and modification of the UCT algorithm in the context of the Warlight game. \newline
-% References 
 \bibliographystyle{plain}
 \bibliography{references}
 
-% End document
 \end{document}
