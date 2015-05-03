@@ -196,7 +196,7 @@ or enemy region, or transferring troops to an already-owned region. The overall 
 MCTS and UCT appears to rely heavily on the quality of random move selection and, while we want to
 explore the full spectrum of actions, we also want to ensure we are only evaluating moves that are
 sensible to increase our chances of winning. As a result, we explored several options for the 
-generation of random moves. Intiutively, our first implementation of simulating a move involves total 
+generation of random moves. Intuitively, our first implementation of simulating a move involves total 
 randomness.  That is, we randomly select a single region that we own, randomly select one of its 
 neighbors, and issue a command to send all of the owned region's troops to the neighboring state.  
 If the neighboring region also happens to be owned by our bot then this simply results in a transfer 
@@ -233,7 +233,7 @@ concatenated together and provided to the game engine so that we perform any num
 transfers in a single move.  The addition of multiple moves per turn appears to be the largest 
 contributing factor in terms of overall performance and winning games. A second desirable 
 characteristic of this approach is that it efficiently evaluates the quality of an attack before blindly
-executing it.  This elimates all unfavorable attacks and balances the number of transfers. 
+executing it.  This eliminates all unfavorable attacks and balances the number of transfers. 
 Additionally, by calculating how many more troops our region contains than the opposing region, we 
 ensure that we only attack with what we believe to be the minimum number of troops.  From this, our bot
 maximizes the probability of a successful attack, while still leaving troops that are unnecessary for
@@ -268,14 +268,14 @@ assumption of full knowledge of the game.
 Our bot is implemented in C++, and the code is publicly available on Github\cite{github}.  
 The bot takes input on \code{STDIN} and returns commands to be executed back to the game 
 engine on \code{STDOUT}.  All of the algorithms (MCTS, UCT, and the Greedy OpponentBot) are 
-implemented in classes in the codebase, the first two in a class called \code{MCTSManager} 
+implemented in classes in the code base, the first two in a class called \code{MCTSManager} 
 and the latter in \code{OpponentBot}.  Additional classes are included for parsing the text 
-input from the game engine and for storing the state of gameplay.  The input parser, basic 
+input from the game engine and for storing the state of game play.  The input parser, basic 
 outline of the bot code, and the classes for watching the bot state are all based on the 
 starter code provided by the Warlight developers, referred to as StarterBot.  In an effort
 to focus on the algorithms, we chose to use a tree structure library called \emph{tree.hh}\cite{treehh}.
-As it was the primary objective for this work, we have included screenshots of our UCT
-implementation in Appendix.  %%%%
+As it was the primary objective for this work, we have included screen shots of our UCT
+implementation in Appendix A.
 
 
 \section{Experiments}\label{sec:experiments}
@@ -402,8 +402,8 @@ opponent has a presence.
 \newpage
 
 \begin{appendices}
-\section{Implementation Screenshots}
-Figures~\ref{fig:uct_imp} and~\ref{fig:uct_helper_imp} provide screenshots of the C++ source code
+\section{Implementation Screen shots}
+Figures~\ref{fig:uct_imp} and~\ref{fig:uct_helper_imp} provide screen shots of the C++ source code
 that implements the UCT algorithm, as described in Section~\ref{sec:uct}.
 
 %
@@ -419,7 +419,7 @@ that implements the UCT algorithm, as described in Section~\ref{sec:uct}.
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.71\columnwidth]{uct_helper_implementation}
-  \caption{The UCT helper function that implementes the pseudo code shown in Figure~\ref{fig:uct_alg}.}
+  \caption{The UCT helper function that implements the pseudo code shown in Figure~\ref{fig:uct_alg}.}
   \label{fig:uct_helper_imp}
 \end{figure}
 %
