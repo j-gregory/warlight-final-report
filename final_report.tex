@@ -154,6 +154,16 @@ over time, as well as a \emph{Win Rate} for each node.  The UCT score for a node
 combination of the exploration bias and win rate.
 \todo{Jason: Can you expand this a bit?}
 
+%
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.45\columnwidth]{uct_algorithm}
+  \caption{The UCT algorithm used in this work \cite{Nau2015}, \cite{NauLecture}.}
+  \label{fig:schedule}
+\end{figure}
+%
+
+
 \subsection{Random Move Generation}\label{sec:move_gen}
 The generation of moves for MCTS consists of either choosing to do nothing, attacking a neutral 
 or enemy region, or transferring troops to an already-owned region. The overall performance of 
