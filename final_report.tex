@@ -20,9 +20,11 @@
 \maketitle
 
 \abstract{In this work, we describe a probabilistic planner that competes in
-the Warlight AI Challenge 2.  More specifically, we have implemented and modified
-the \emph{Upper Confidence Bounds on Trees} (UCT) algorithm for winning Warlight
-games when randomly paired up against users with other strategies.}
+the Warlight AI Challenge 2.  More specifically, we have implemented and applied the
+\emph{Monte Carlo Tree Search} (MCTS) algorithm with the \emph{Upper Confidence Bounds on Trees} 
+(UCT) algorithm for winning Warlight games when randomly paired up against users that employ other 
+strategies.  Using these probabilistic planners we have successfully won the majority of our games
+against random AI bots.}
 
 \section{Introduction}\label{sec:intro}
 \subsection{AI in Games}\label{aiingames}
@@ -154,12 +156,11 @@ for our bot. Since we do not always simulate to the end of a game, we cannot sim
 of whether the game was a win, loss, or draw.  In the event, the branch we traversed resulted in a win
 or loss, we certainly must use this information; however, we did not rely on simulating to this point
 in order to evaluate moves. In fact, we developed several metrics for which to evaluate
-the quality of a branch in the game tree, which include 1) the ratio between the number of regions
-the user bot owns and the total number of regions in the game; 2) the ratio between the number of 
-regions the user bot owns  and the number of regions we believe the opponent owns; and 
-3) \todo{Add additional metrics}. 
-Ultimately, we used the first metrics because of its ability to capture growth of power and 
-its simplicity to calculate.  
+the quality of a branch in the game tree.  Of these, the most successful were 1) the ratio between 
+the number of regions the user bot owns and the total number of regions in the game and 2) the 
+ratio between the number of regions the user bot owns  and the number of regions we believe the 
+opponent owns.  Ultimately, we used the first metric because of its ability to capture growth of 
+power and because of its simplicity to calculate.  
 
 %record of whether that game was a win, a loss, or a draw.  
 %This information is used by UCT in the future rounds' selection steps.
@@ -280,28 +281,120 @@ implementation in Appendix.  %%%%
 \section{Experiments}\label{sec:experiments}
 The simplest experiment for our bot was to submit it to the challenge server and see how it 
 fared against other bots.  We have tested our bot against multiple other bots participating 
-in the challenge, and we have won against several of them.  However, some of this success is 
-due to the fact that many of the bots that have been uploaded are likely incomplete or are 
-even just the unmodified StarterBot, and these results may be unreliable.
+in the challenge, and at the time of writing this report we have won 17 out of 20 games.  
+Of those 20 games, we had 2 ties and only 1 loss. It is important to note, however, that
+some of this success is due to the fact that some people may have uploaded incomplete bots or 
+simply unmodified StarterBots, and these results may not be fully representative of our performance.
 
 We are building an experiment in which we pit our MCTS/UCT bot against our greedy 
 OpponentBot to determine how much better we can do with the intelligent bot than the greedy 
-one.  However, we do not yet have results of this match.
+one.  However, we do not yet have results of this match. Currently, the greedy agent performs 
+well as a stand-alone agent in test environment independent of UCT; however it is currently 
+still going through some integration issues with  UCT. Originally developed to be run-time 
+inexpensive so that the UCT implementation might make the most of pre-allocated runtime 
+constraints imposed by game engine, the greedy algorithm was not designed with the design 
+flexibility of modern object oriented language and was more tightly coupled by multiple 
+container stacks and synchronizing event handler type routines. Thus complete integration 
+of state classes employed by parent UCT algorithm is taking a little more time than expected 
+and remains a work in progress. However tangential the development of the DFS algorithm might 
+have been within the scope of an UCT algorithm, the appeal of developing complementary planning 
+algorithm as an academic exercise was simply too appealing to ignore.
 
-Currently, the greedy agent performs well as a stand-alone agent (in test environment) 
-independent of UCT; however it is currently still going through some integration issues with 
-UCT. Originally developed to be run-time inexpensive, so that UCT implementation might make 
-the most of pre-allocated runtime constraints imposed by game engine, the greedy algorithm 
-was not designed with the design flexibility of modern object oriented language and was more 
-tightly coupled by multiple container stacks and synchronizing event handler type routines. 
-Thus complete integration of state classes employed by parent UCT algorithm is taking a 
-little more time than the proposed time frame and remains a work in progress. However 
-tangential the development of the DFS algorithm might have been within the scope of an UCT 
-algorithm, the appeal of developing complementary planning algorithm as an academic exercise 
-was simply too appealing to ignore.
+For an initial evaluation of our MCTS with UCT implementation, we submitted our bot to the game 
+engine and collected the results from 11 different games when matched against the website's test 
+bot. We repeated the same process for a primitive bot that we developed earlier in this work.  
+This primitive bot selects the region that has the largest concentration of troops and attacks 
+or transfers all of its troops except for one to a randomly-selected neighbor. The results of 
+11 trials for both of these two bots are summarized in Tables~\ref{tab:primitive_results} 
+and~\ref{tab:uct_results}.
+
+%
+\begin{table}[!htbp]
+  \scriptsize
+  \centering
+  \begin{tabular}{|c|c|c|c|c|c|}
+    \hline
+    \emph{Game Number} & \emph{Total Turns} & \emph{Win/Loss/Tie} & \emph{End Turns} & \emph{Regions Captured} & \emph{Super Regions Captured} \\
+    \hline
+    1   & 60 & T & 60 & 12/21 & 0/4 \\
+    2   & 60 & T & 60 & 12/21 & 1/6 \\
+    3   & 60 & T & 60 & 10/17 & 1/4 \\
+    4   & 60 & T & 60 & 16/20 & 3/5 \\
+    5   & 60 & T & 60 & 12/18 & 2/6 \\
+    6   & 60 & T & 60 & 20/22 & 4/6 \\
+    7   & 60 & T & 60 & 13/21 & 2/5 \\
+    8   & 60 & T & 60 & 5/19 & 1/4 \\
+    9   & 60 & T & 60 & 4/18 & 0/4 \\
+    10  & 60 & T & 60 & 12/18 & 1/4 \\
+    11  & 60 & T & 60 & 15/19 & 3/5 \\
+    \hline
+  \end{tabular}
+  \caption{Results for the primitive algorithm that selects the largest concentration of troops and attacks or transfers to a random neighbor.}
+  \label{tab:primitive_results}
+\end{table}
+%
+
+%
+\begin{table}[!htbp]
+  \scriptsize
+  \centering
+  \begin{tabular}{|c|c|c|c|c|c|}
+    \hline
+    \emph{Game Number} & \emph{Total Turns} & \emph{Win/Loss/Tie} & \emph{End Turns} & \emph{Regions Captured} & \emph{Super Regions Captured} \\
+    \hline
+    1   & 60 & T & 60 & 17/18 & 5/6 \\
+    2   & 60 & T & 60 & 16/20 & 5/6 \\
+    3   & 60 & T & 60 & 21/22 & 5/6 \\
+    4   & 60 & W & 59 & 16/16 & 4/4 \\
+    5   & 60 & W & 56 & 19/19 & 5/5 \\
+    6   & 60 & T & 60 & 20/22 & 4/6 \\
+    7   & 60 & W & 28 & 22/22 & 6/6 \\
+    8   & 60 & W & 54 & 19/19 & 6/6 \\
+    9   & 60 & T & 60 & 18/20 & 4/5 \\
+    10  & 60 & T & 60 & 14/17 & 3/4 \\
+    11  & 60 & W & 48 & 19/19 & 6/6 \\
+    \hline
+  \end{tabular}
+  \caption{Results for the MCTS with UCT algorithm.}
+  \label{tab:uct_results}
+\end{table}
+%
 
 \section{Conclusion}\label{sec:conclusion}
-\todo{still needs to be filled in\ldots}
+From the results show in the tables of Section~\ref{sec:experiments}, we make several observations. 
+First, as one would expect, the primitive bot fails to win a single game.  While the primitive bot
+does not actually lose any games, it provide no planning for either its actions or the opponent's 
+actions and executes a large number of unnecessary transfers that ultimately wastes turns and 
+decreases efficiency in obtaining regions. At the end of these 11 trials, the primitive bot owned
+on average $61.2\%$ of the regions and $34.0\%$ of the super regions.
+
+The MCTS with UCT algorithm, on the other hand, has a much more focused approach to attacking and 
+transferring through its more sophisticated planning technique. As a direct result of sampling the 
+search space for improved actions, the MCTS with UCT algorithm is able to win 5 of 11 games.  In the
+remaining 6 games that it tied, it owned an average of $89.1\%$ of the regions and $78.8\%$ of the 
+super regions. The MCTS with UCT algorithm clearly was more efficient at executing moves due to the 
+addition of planning and it is not hard to imagine that this bot would have eventually won the 
+remaining 6 games, if allowed a small number of additional turns.
+
+Additionally, through our testing, we have determined several other general characteristics of our 
+implementation.  First, we bring to light the importance of our application, namely that our bot 
+is competing against other AI bots. From visual inspection of several games, one immediately observes 
+the poor performance of most bots submitted to the competition. This factor plays an important role
+in our implementation.  We found that the specific strategy for attacking and transferring troops
+appears to be more impactful than the addition of MCTS and UCT.  We believe this is because the states 
+we are planning over have such large amounts of variance from the eventual game states.  This is 
+either due to the uncertainty introduced by fog of war or the misrepresentation of predicted opponent
+moves. In our efforts, we believe we may have developed an opponent bot that is overly complicated
+and takes more into consideration than that of our opponent's AI implementation. Likewise, in the
+beginning of the game, we know virtually nothing about the opponent so attempting to predict their
+moves when we don't know the regions they own is nearly impossible. We offer that it may make sense
+to have an adaptive planning depth where we simulate deeper into the game as the game progresses into
+later rounds and there is more certainty of the overall environment.  Considering all this, we 
+hypothesize that the MCTS with UCT algorithm would be more useful and demonstrate its value more 
+effectively if it were competing against a human player where the opponent is much more intelligent 
+and predicting their moves, while more complicated, may be more feasible.  We believe, this would be 
+especially true later in the game when there is less fog of war and more certainty about where the 
+opponent has a presence.
 
 \bibliographystyle{plain}
 \bibliography{references}
