@@ -88,7 +88,7 @@ We have built a bot that uses \emph{Monte-Carlo Tree Search} (MCTS) and \emph{Up
 Confidence Bound for Trees} (UCT) to play Warlight.  We have also built an ``Opponent Bot'' 
 that performs its moves greedily instead of using our algorithm.
 
-\subsection{UCT and MCTS}
+\subsection{MCTS}
 While traditional AI algorithms for playing games rely on static evaluation functions that 
 analyze the game tree to determine the next move to make based on the current state of the 
 game, Monte-Carlo Tree Search uses an entirely different approach.  Taking into account that 
@@ -97,34 +97,38 @@ uses a cycle of \emph{Selection, Expansion, Simulation, and Back-Propagation} to
 explore the game tree.
 
 \subsubsection{Selection}
-The first step of MCTS is finding a leaf node of the game tree from which to further 
-analyze.  The choice of which leaf node will be selected must balance the two goals of 
-\emph{exploration} and \emph{expansion} -- whether to strike off in a new direction in the tree to see if 
-the result will be better or to press farther down the current path.
+The first step of MCTS is finding a node of the game tree from which to further 
+analyze.  The choice of which node will be selected must balance the two goals of 
+\emph{exploration} and \emph{expansion} -- whether to strike off in a new direction in the 
+tree to see if the result will be better or to press farther down the current path.
 
 Within the MCTS ``Selection'' step, we use UCT to determine the ideal node for 
 selection.  We apply the UCT algorithm to determine a score for each node, then choose the 
 node with the best score.  For information about the UCT algorithm, see Section~\ref{sec:uct}.
 
 \subsubsection{Expansion}
-Once a leaf node has been selected, the Expansion process begins. For this, 
+Once a node has been selected, the Expansion process begins. For this, 
 the algorithm computes a random move, generates the resulting state by simulating the random move, 
-and adds this new node to the game tree.
-%one or more additional nodes are added below it to make 
-%space for the game simulations that will be played based on the game state at this node.
+and adds this new node to the game tree. The random move could consist of doing nothing or any 
+number of attacks and transfers between regions.  Additional detail on our approach for generating
+a move is described in Section~\ref{sec:move_gen}.
 
 \subsubsection{Simulation}
 After a single node is added, a game of alternating turns between the user's bot and an 
 opponent bot is simulated starting from the state of the node created in the Expansion step.  
 %We use our OpponentBot (described in section \ref{sec:oppbot}) to simulate the opponent's moves 
 %during this step.  
-We first used a StarterBot, which is the baseline code that the competition provides for simulating
-the opponent's move, and then later developed a more sophisticated OpponentBot, described in
-Section~\ref{sec:oppbot}.  The simulation is deliberately simple -- simpler 
-than our primary planning algorithm -- in order to leave the bulk of our limited execution 
-time for the MCTS and UCT operations.  Note, due to time restrictions imposed by the game engine, 
-we currently simulate approximately 10 turns and then stop.  Provided we have the time, we could
-simulate more iterations to gain more knowledge about the path we are taking.
+Each player generates a random move, which is then simulated to produced a new resulting state.
+To simulate a move, we copied the battle simulation code directly from the open-source game engine
+to ensure our results were as probabilistically correct as possible. In terms of generating moves
+for the opponent, we first used a StarterBot, which is the baseline code that the competition 
+organizers initially provide.  In an attempt to improve our implementation of MCTS, we developed 
+a more sophisticated OpponentBot, described in Section~\ref{sec:oppbot}.  The implementation of the
+OpponentBot is deliberately simple -- simpler than our primary planning algorithms -- in order to 
+leave the bulk of our limited execution time for the MCTS and UCT operations.  Note, due to time 
+restrictions imposed by the game engine, we currently simulate approximately 10 turns and then stop.  
+Provided we have extra time during the game, we could simulate more iterations to gain additional
+ knowledge about the path we are taking.
 
 \subsubsection{Back-Propagation}
 After a simulation is complete, the node at which the simulation was executed, and all of its 
@@ -135,12 +139,13 @@ or loss, we certainly must use this information; however, we did not rely on sim
 in order to evaluate moves. In fact, we developed several metrics for which to evaluate
 the quality of a branch in the game tree, which include 1) the ratio between the number of regions
 the user bot owns and the total number of regions in the game; 2) the ratio between the number of 
-regions the user bot owns  and the number of regions we believe the opponent owns; and 3) . 
+regions the user bot owns  and the number of regions we believe the opponent owns; and 
+3) \todo{Add additional metrics}. 
 Ultimately, we used the first metrics because of its ability to capture growth of power and 
 its simplicity to calculate.  
 
-%record of whether that game was a win, a loss, or a 
-%draw.  This information is used by UCT in the future rounds' selection steps.
+%record of whether that game was a win, a loss, or a draw.  
+%This information is used by UCT in the future rounds' selection steps.
 
 \subsection{UCT}\label{sec:uct}
 To balance the need for exploration of entirely new paths through the game tree with
@@ -148,6 +153,55 @@ exploitation of known paths, the UCT algorithm maintains an \emph{Exploration Bi
 over time, as well as a \emph{Win Rate} for each node.  The UCT score for a node is based on a
 combination of the exploration bias and win rate.
 \todo{Jason: Can you expand this a bit?}
+
+\subsection{Random Move Generation}\label{sec:move_gen}
+The generation of moves for MCTS consists of either choosing to do nothing, attacking a neutral 
+or enemy region, or transferring troops to an already-owned region. The overall performance of 
+MCTS and UCT appears to rely heavily on the quality of random move selection and, while we want to
+explore the full spectrum of actions, we also want to ensure we are only evaluating moves that are
+sensible to increase our chances of winning. As a result, we explored several options for the 
+generation of random moves. Intiutively, our first implementation of simulating a move involves total 
+randomness.  That is, we randomly select a single region that we own, randomly select one of its 
+neighbors, and issue a command to send all of the owned region's troops to the neighboring state.  
+If the neighboring region also happens to be owned by our bot then this simply results in a transfer 
+of troops; however, if the neighboring region is neutral or owned by the opponent we will attack it. 
+In some instances, this results in needless transfers or, in the worst case, a region with a small 
+number of troops attacking a neighbor with a large number of troops, which are very undesirable 
+characteristics. 
+
+The second approach we took to move generation improves this technique slightly by selecting one of 
+our regions that has the largest number of troops and attacking or transferring to a random neighbor.  
+This modification increases the probability of executing an intelligent action, but still leaves room 
+for improvement.
+
+Our third implementation of random move generation consists of sorting all of our owned regions
+by the number of troops in a decreasing order and, for each owned region, searches for a neighboring
+region that we do not own. This ensures that our region with the largest concentration of troops will
+always attack a neighboring region. While this approach removes the unnecessary transfers between 
+already-owned regions, it also removes all transfers, which could be undesirable late in the game
+when a transfer could help a region survive an attack. 
+
+Our fourth, and final implementation of move generation, provided a monumental improvement.  The 
+approach is as follows: for every region that we own and has at least 3 troops, sort its neighbors 
+by decreasing number of troops, and find the neighboring region that we do not own and has the smallest
+ number of troops. If there exists no eligible, neighboring region, simply transfer to the region with 
+the smallest number of troops.  If there is, however, a neighboring region that we could attack, we 
+quickly evaluate whether this is  an intelligent action.  More specifically, if our region has less 
+than or equal to the number of troops in the neighboring region, we refrain from attacking.  If our 
+region has approximately 1.5 times the number of armies as the neighboring region then we attack with 
+that many troops as this is probabilistically the number of troops required for a successful attack. 
+Finally, if we do not have 1.5 times the number of troops as the opposing region, we attack with all 
+of our troops to maximize success. This approach has several enticing properties.  First, and 
+foremost, we iterate all of our owned regions and compute an attack or transfer.  These results are 
+concatenated together and provided to the game engine so that we perform any number of attacks or 
+transfers in a single move.  The addition of multiple moves per turn appears to be the largest 
+contributing factor in terms of overall performance and winning games. A second desirable 
+characteristic of this approach is that it efficiently evaluates the quality of an attack before blindly
+executing it.  This elimates all unfavorable attacks and balances the number of transfers. 
+Additionally, by calculating how many more troops our region contains than the opposing region, we 
+ensure that we only attack with what we believe to be the minimum number of troops.  From this, our bot
+maximizes the probability of a successful attack, while still leaving troops that are unnecessary for
+the attack in their original region so that they can provide support for defending.
 
 \subsection{Opponent Bot}\label{sec:oppbot}
 Most existing UCT literature and applications simulate both the AI player's and opponent's
